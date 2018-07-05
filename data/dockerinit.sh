@@ -1,0 +1,33 @@
+#cloud-config
+
+users:
+- name: gcer
+  uid: 2000
+
+write_files:
+- path: /etc/systemd/system/rstudio.service
+  permissions: 0644
+  owner: root
+  content: |
+    [Unit]
+    Description=RStudio Server
+    Requires=docker.service
+    After=docker.service
+
+    [Service]
+    Restart=always
+    Environment="HOME=/home/gcer"
+    ExecStartPre=/usr/share/google/dockercfg_update.sh
+    ExecStart=/usr/bin/docker run -p 80:8787 \
+                                  -e "ROOT=TRUE" \
+                                  -e "R_LIBS_USER=/library/" \
+                                  -e USER=chris -e PASSWORD=lyra3107 \
+                                  -v /home/gcer:/home/chris \
+                                  --name=rstudio \
+                                  rocker/tidyverse
+    ExecStop=/usr/bin/docker stop rstudio
+    ExecStopPost=/usr/bin/docker rm rstudio
+
+runcmd:
+- systemctl daemon-reload
+- systemctl start rstudio.service
